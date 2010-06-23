@@ -61,7 +61,11 @@ from cStringIO import StringIO
 from types import *
 from time import sleep
 
+DEBUG = False
+
 EOL = '\r\n'
+BOC = 'Response: Follows'
+EOC = '--END COMMAND--'
 
 class ManagerMsg(object): 
     """A manager interface message"""
@@ -81,41 +85,71 @@ class ManagerMsg(object):
 
     def parse(self, response):
         """Parse a manager message"""
+        if DEBUG: print 'enter: ManagerMsg.parse()'
         response.seek(0)
 
+        headers_start = False
+        headers_end = False
+        command = False
+        command_done = False
         data = []
 
+        if DEBUG: print response.getvalue()
         # read the response line by line
         for line in response.readlines():
+            if DEBUG: print 'ManagerMsg.parse: readlines'
             line = line.rstrip()  # strip trailing whitespace
 
-            if not line: continue  # don't process if this is not a message
+            if not line and not headers_start:
+                continue  # don't process if this is not a message
+            elif not line and headers_start:
+                headers_end = True
+            elif not line and command_done:
+                continue
+            else:
+                headers_start = True
+
+            if DEBUG: print line
 
             # locate the ':' in our message, if there is one
-            if line.find(':') > -1:
+            # XXX - This breaks for "command" that has data returning things with : in them
+            if headers_start and not headers_end and line.find(':') > -1:
                 item = [x.strip() for x in line.split(':',1)]
 
                 # if this is a header
                 if len(item) == 2:
                     # store the header
                     self.headers[item[0]] = item[1]
+                    if DEBUG: print 'ManagerMsg.parse: store header'
+                    continue
                 # otherwise it is just plain data
-                else:
-                    data.append(line)
+                #else:
+                    #data.append(line)
+
             # if there was no ':', then we have data
-            else:
-                data.append(line)
+            if not command and self.headers.get('Response','') == 'Follows':
+                command = True
+
+            if command and self.headers.get('ActionID',''):
+                headers_end = True
+
+            if command and line.startswith(EOC):
+                command_done = True
+                continue
+
+            data.append(line)
 
         # store the data
         self.data = '%s\n' % '\n'.join(data)
+        if DEBUG: print 'leaving: ManagerMsg.parse()'
 
     def has_header(self, hname):
         """Check for a header"""
         return self.headers.has_key(hname)
 
-    def get_header(self, hname):
+    def get_header(self, hname, defval = None):
         """Return the specfied header"""
-        return self.headers[hname]
+        return self.headers.get(hname, defval)
 
     def __getitem__(self, hname):
         """Return the specfied header"""
@@ -144,9 +178,9 @@ class Event(object):
         """Check for a header"""
         return self.headers.has_key(hname)
 
-    def get_header(self, hname):
+    def get_header(self, hname, defval = None):
         """Return the specfied header"""
-        return self.headers[hname]
+        return self.headers.get(hname, defval)
     
     def __getitem__(self, hname):
         """Return the specfied header"""
@@ -268,9 +302,11 @@ class Manager(object):
         """
 
         # loop while we are sill running and connected
+        welcome = False
         while self._running.isSet() and self._connected.isSet():
 
             lines = []
+            command = False
             try:
                 try:
                     # if there is data to be read
@@ -303,14 +339,21 @@ class Manager(object):
 
                         lines.append(line) # add the line to our message
 
+                        # Is this a command response?
+                        if line.startswith(BOC):
+                            command = True
+                        if command and line.startswith(EOC):
+                            command = False
+
                         # if the line is our EOL marker we have a complete message
-                        if line == EOL:
+                        if line == EOL and not command:
                             break
 
                         # check to see if this is the greeting line    
-                        if line.find('/') >= 0 and line.find(':') < 0:
+                        if line.find('/') >= 0 and line.find(':') < 0 and not welcome:
                             self.title = line.split('/')[0].strip() # store the title of the manager we are connecting to
                             self.version = line.split('/')[1].strip() # store the version of the manager we are connecting to
+                            welcome = True
                             break
 
                         #sleep(.001)  # waste some time before reading another line
@@ -595,3 +638,4 @@ class ManagerException(Exception): pass
 class ManagerSocketException(ManagerException): pass
 class ManagerAuthException(ManagerException): pass
 
+# vim: set ai si et ts=4 sw=4 :
