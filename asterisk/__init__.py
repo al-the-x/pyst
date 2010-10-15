@@ -9,6 +9,7 @@ config  - a module for parsing asterisk config files
 manager - a module for interacting with the asterisk manager interface
 
 """
+import agi, agitb, config, manager
 
 __all__ = ['agi', 'agitb', 'config', 'manager']
 
