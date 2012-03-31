@@ -10,12 +10,12 @@ This module provides a Python API for interfacing with the asterisk manager.
    import sys
 
    def handle_shutdown(event, manager):
-      print "Recieved shutdown event"
+      print "Received shutdown event"
       manager.close()
       # we could analize the event and reconnect here
       
    def handle_event(event, manager):
-      print "Recieved event: %s" % event.name
+      print "Received event: %s" % event.name
    
    manager = asterisk.manager.Manager()
    try:

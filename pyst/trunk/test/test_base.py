@@ -3,7 +3,8 @@ import socket
 import unittest
 from   signal import SIGTERM
 from   asterisk.manager import Manager
-from   os import fork, kill
+from   os import fork, kill, waitpid
+from   time import sleep
 
 class Event(dict):
     """ Events are encoded as dicts with a header fieldname to
@@ -32,7 +33,7 @@ class Event(dict):
         if 'Response' in self:
             self ['ActionID'] = [id]
         for k,v in sorted(self.iteritems(), key=self.sort):
-            if v == 'CONTENT':
+            if k == 'CONTENT':
                 ret.append(v)
             else :
                 for x in v:
@@ -75,22 +76,24 @@ class Test_Manager(unittest.TestCase):
             f.write('Asterisk Call Manager/1.1\r\n')
             f.flush()
             cmd = lastid = ''
-            for l in f:
-                if l.startswith ('ActionID:'):
-                    lastid = l.split(':', 1)[1].strip()
-                elif l.startswith ('Action:'):
-                    cmd = l.split(':', 1)[1].strip()
-                elif not l.strip():
-                    for d in chatscript, self.default_events:
-                        if cmd in d:
-                            for event in d[cmd]:
-                                f.write(event.as_string(id = lastid))
-                                f.flush()
-                                if cmd == 'Logoff':
-                                    print >> sys.stderr, "CLOSING"
-                                    f.close()
-                            break
-            sys.exit(0)
+            try:
+                for l in f:
+                    if l.startswith ('ActionID:'):
+                        lastid = l.split(':', 1)[1].strip()
+                    elif l.startswith ('Action:'):
+                        cmd = l.split(':', 1)[1].strip()
+                    elif not l.strip():
+                        for d in chatscript, self.default_events:
+                            if cmd in d:
+                                for event in d[cmd]:
+                                    f.write(event.as_string(id = lastid))
+                                    f.flush()
+                                    if cmd == 'Logoff':
+                                        f.close()
+                                break
+            except:
+                pass
+            sleep(10000) # wait for being killed
 
     def setup_child(self, chatscript):
         s = socket.socket (socket.AF_INET, socket.SOCK_STREAM)
@@ -118,6 +121,8 @@ class Test_Manager(unittest.TestCase):
         self.close()
         if self.childpid:
             kill(self.childpid, SIGTERM)
+            waitpid(self.childpid, 0)
+            self.childpid = None
 
     def handler(self, event, manager):
         self.events.append(event)
@@ -130,13 +135,36 @@ class Test_Manager(unittest.TestCase):
 
     def test_login(self):
         self.run_manager({})
-        print >> sys.stderr, "after run manager"
-        self.manager.login('account', 'geheim')
-        print >> sys.stderr, "after login"
+        r = self.manager.login('account', 'geheim')
+        self.assertEqual(r ['Response'], 'Success')
+        self.assertEqual(r ['Message'], 'Authentication accepted')
         self.close()
-        print >> sys.stderr, "after close"
-        for e in self.events:
-            print >> sys.stderr, e
+        self.assertEqual(self.events, [])
+
+    def test_command(self):
+        d = dict
+        events = dict \
+            ( Command =
+                ( Event
+                    ( Response  = ('Follows',)
+                    , Privilege = ('Command',)
+                    , CONTENT   = 
+"""Channel              Location             State   Application(Data)
+lcr/556              s@attendoparse:9     Up Read(dtmf,,30,noanswer,,2)    
+1 active channel
+1 active call
+372 calls processed
+--END COMMAND--\r
+"""
+                    )
+                ,
+                )
+            )
+        self.run_manager(events)
+        r = self.manager.command ('core show channels')
+        self.assertEqual(self.events, [])
+        self.assertEqual(r ['Response'], 'Follows')
+        self.assertEqual(r.data, events ['Command'][0]['CONTENT'])
 
 def test_suite():
     suite = unittest.TestSuite()
