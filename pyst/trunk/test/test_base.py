@@ -133,11 +133,17 @@ class Test_Manager(unittest.TestCase):
         self.manager.connect('localhost', port = self.port)
         self.manager.register_event ('*', self.handler)
 
+    def compare_result(self, r_event, event):
+        for k in event:
+            if k == 'CONTENT':
+                self.assertEqual(r_event.data, event ['CONTENT'])
+            else:
+                self.assertEqual(r_event[k], event[k][0])
+
     def test_login(self):
         self.run_manager({})
         r = self.manager.login('account', 'geheim')
-        self.assertEqual(r ['Response'], 'Success')
-        self.assertEqual(r ['Message'], 'Authentication accepted')
+        self.compare_result(r, self.default_events['Login'][0])
         self.close()
         self.assertEqual(self.events, [])
 
@@ -163,8 +169,24 @@ lcr/556              s@attendoparse:9     Up Read(dtmf,,30,noanswer,,2)
         self.run_manager(events)
         r = self.manager.command ('core show channels')
         self.assertEqual(self.events, [])
-        self.assertEqual(r ['Response'], 'Follows')
-        self.assertEqual(r.data, events ['Command'][0]['CONTENT'])
+        self.compare_result(r, events['Command'][0])
+
+    def test_redirect(self):
+        d = dict
+        events = dict \
+            ( Redirect =
+                ( Event
+                    ( Response  = ('Success',)
+                    , Message   = ('Redirect successful',)
+                    )
+                ,
+                )
+            )
+        self.run_manager(events)
+        r = self.manager.redirect \
+            ('lcr/556', 'generic', 'Bye', context='attendo')
+        self.assertEqual(self.events, [])
+        self.compare_result(r, events['Redirect'][0])
 
 def test_suite():
     suite = unittest.TestSuite()
