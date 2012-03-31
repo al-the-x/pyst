@@ -5,6 +5,7 @@ from   signal import SIGTERM
 from   asterisk.manager import Manager
 from   os import fork, kill, waitpid
 from   time import sleep
+from   Queue import Queue
 
 class Event(dict):
     """ Events are encoded as dicts with a header fieldname to
@@ -16,14 +17,29 @@ class Event(dict):
         The key 'CONTENT' is special, it denotes text that is appended
         to an event (e.g. for testing the output of the command action)
     """
-    sort_order = dict \
-        ( Response =     10
-        , Username =     20
-        , Secret   =     30
-        , Command  =     30
-        , ActionID =    100
-        , CONTENT  = 100000
-        )
+    sort_order = dict ((x, n) for n, x in enumerate
+        (( 'Event'
+         , 'Response'
+         , 'Username'
+         , 'Privilege'
+         , 'Secret'
+         , 'Command'
+         , 'Channel'
+         , 'ChannelState'
+         , 'ChannelStateDesc'
+         , 'CallerIDNum'
+         , 'CallerIDName'
+         , 'AccountCode'
+         , 'Context'
+         , 'Exten'
+         , 'Reason'
+         , 'Uniqueid'
+         , 'ActionID'
+         , 'OldAccountCode'
+         , 'Cause'
+         , 'Cause-txt'
+        )))
+    sort_order ['CONTENT'] = 100000
 
     def sort(self, x):
         return self.sort_order.get(x[0], 10000)
@@ -116,6 +132,8 @@ class Test_Manager(unittest.TestCase):
         self.manager  = None
         self.childpid = None
         self.events   = []
+        self.evcount  = 0
+        self.queue    = Queue()
 
     def tearDown(self):
         self.close()
@@ -126,6 +144,8 @@ class Test_Manager(unittest.TestCase):
 
     def handler(self, event, manager):
         self.events.append(event)
+        self.queue.put(self.evcount)
+        self.evcount += 1
 
     def run_manager(self, chatscript):
         self.setup_child(chatscript)
@@ -187,6 +207,125 @@ lcr/556              s@attendoparse:9     Up Read(dtmf,,30,noanswer,,2)
             ('lcr/556', 'generic', 'Bye', context='attendo')
         self.assertEqual(self.events, [])
         self.compare_result(r, events['Redirect'][0])
+
+    def test_originate(self):
+        d = dict
+        events = dict \
+            ( Originate =
+                ( Event
+                    ( Response  = ('Success',)
+                    , Message   = ('Originate successfully queued',)
+                    )
+                , Event
+                    ( Event            = ('Newchannel',)
+                    , Privilege        = ('call,all',)
+                    , Channel          = ('lcr/557',)
+                    , ChannelState     = ('1',)
+                    , ChannelStateDesc = ('Rsrvd',)
+                    , CallerIDNum      = ('',)
+                    , CallerIDName     = ('',)
+                    , AccountCode      = ('',)
+                    , Exten            = ('',)
+                    , Context          = ('',)
+                    , Uniqueid         = ('1332366541.558',)
+                    )
+                , Event
+                    ( Event            = ('NewAccountCode',)
+                    , Privilege        = ('call,all',)
+                    , Channel          = ('lcr/557',)
+                    , Uniqueid         = ('1332366541.558',)
+                    , AccountCode      = ('4019946397',)
+                    , OldAccountCode   = ('',)
+                    )
+                , Event
+                    ({ 'Event'           : ('NewCallerid',)
+                     , 'Privilege'       : ('call,all',)
+                     , 'Channel'         : ('lcr/557',)
+                     , 'CallerIDNum'     : ('',)
+                     , 'CallerIDName'    : ('',)
+                     , 'Uniqueid'        : ('1332366541.558',)
+                     , 'CID-CallingPres' :
+                        ('0 (Presentation Allowed, Not Screened)',)
+                    })
+                , Event
+                    ( Event            = ('Newchannel',)
+                    , Privilege        = ('call,all',)
+                    , Channel          = ('lcr/558',)
+                    , ChannelState     = ('1',)
+                    , ChannelStateDesc = ('Rsrvd',)
+                    , CallerIDNum      = ('',)
+                    , CallerIDName     = ('',)
+                    , AccountCode      = ('',)
+                    , Exten            = ('',)
+                    , Context          = ('',)
+                    , Uniqueid         = ('1332366541.559',)
+                    )
+                , Event
+                    ( Event            = ('Newstate',)
+                    , Privilege        = ('call,all',)
+                    , Channel          = ('lcr/558',)
+                    , ChannelState     = ('4',)
+                    , ChannelStateDesc = ('Ring',)
+                    , CallerIDNum      = ('0000000000',)
+                    , CallerIDName     = ('',)
+                    , Uniqueid         = ('1332366541.559',)
+                    )
+                , Event
+                    ( Event            = ('Newstate',)
+                    , Privilege        = ('call,all',)
+                    , Channel          = ('lcr/558',)
+                    , ChannelState     = ('7',)
+                    , ChannelStateDesc = ('Busy',)
+                    , CallerIDNum      = ('0000000000',)
+                    , CallerIDName     = ('',)
+                    , Uniqueid         = ('1332366541.559',)
+                    )
+                , Event
+                    ({ 'Event'         : ('Hangup',)
+                     , 'Privilege'     : ('call,all',)
+                     , 'Channel'       : ('lcr/558',)
+                     , 'Uniqueid'      : ('1332366541.559',)
+                     , 'CallerIDNum'   : ('0000000000',)
+                     , 'CallerIDName'  : ('<unknown>',)
+                     , 'Cause'         : ('16',)
+                     , 'Cause-txt'     : ('Normal Clearing',)
+                    })
+                , Event
+                    ({ 'Event'         : ('Hangup',)
+                     , 'Privilege'     : ('call,all',)
+                     , 'Channel'       : ('lcr/557',)
+                     , 'Uniqueid'      : ('1332366541.558',)
+                     , 'CallerIDNum'   : ('<unknown>',)
+                     , 'CallerIDName'  : ('<unknown>',)
+                     , 'Cause'         : ('17',)
+                     , 'Cause-txt'     : ('User busy',)
+                    })
+                , Event
+                    ( Event            = ('OriginateResponse',)
+                    , Privilege        = ('call,all',)
+                    , Response         = ('Failure',)
+                    , Channel          = ('LCR/Ext1/0000000000',)
+                    , Context          = ('linecheck',)
+                    , Exten            = ('1',)
+                    , Reason           = ('1',)
+                    , Uniqueid         = ('<null>',)
+                    , CallerIDNum      = ('<unknown>',)
+                    , CallerIDName     = ('<unknown>',)
+                    )
+                )
+            )
+        self.run_manager(events)
+        r = self.manager.originate \
+            ('LCR/Ext1/0000000000', '1'
+            , context   = 'linecheck'
+            , priority  = '1'
+            , account   = '4019946397'
+            , variables = {'CALL_DELAY' : '1', 'SOUND' : 'abandon-all-hope'}
+            )
+        self.compare_result(r, events['Originate'][0])
+        for k in events['Originate'][1:]:
+            n = self.queue.get()
+            self.compare_result(self.events[n], events['Originate'][n+1])
 
 def test_suite():
     suite = unittest.TestSuite()
