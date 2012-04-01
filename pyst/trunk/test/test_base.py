@@ -52,8 +52,11 @@ class Event(dict):
             if k == 'CONTENT':
                 ret.append(v)
             else :
-                for x in v:
-                    ret.append (": ".join ((k, x)))
+                if isinstance(v, str):
+                    ret.append (": ".join ((k, v)))
+                else:
+                    for x in v:
+                        ret.append (": ".join ((k, x)))
         ret.append ('')
         ret.append ('')
         return '\r\n'.join (ret)
@@ -154,11 +157,13 @@ class Test_Manager(unittest.TestCase):
         self.manager.register_event ('*', self.handler)
 
     def compare_result(self, r_event, event):
-        for k in event:
+        for k, v in event.iteritems():
             if k == 'CONTENT':
-                self.assertEqual(r_event.data, event ['CONTENT'])
+                self.assertEqual(r_event.data, v)
+            elif isinstance(v, str):
+                self.assertEqual(r_event[k], v)
             else:
-                self.assertEqual(r_event[k], event[k][0])
+                self.assertEqual(r_event[k], v[0])
 
     def test_login(self):
         self.run_manager({})
@@ -326,6 +331,281 @@ lcr/556              s@attendoparse:9     Up Read(dtmf,,30,noanswer,,2)
         for k in events['Originate'][1:]:
             n = self.queue.get()
             self.compare_result(self.events[n], events['Originate'][n+1])
+
+    def test_misc_events(self):
+        d = dict
+        # Events from SF bug 3470641 
+        # http://sourceforge.net/tracker/
+        # ?func=detail&aid=3470641&group_id=76162&atid=546272
+        # But we fail to reproduce the bug.
+        events = dict \
+            ( Login =
+                ( self.default_events['Login'][0]
+                , Event
+                    ({ 'AppData'    : '0?begin2'
+                     , 'Extension'  : 'zap2dahdi'
+                     , 'Uniqueid'   : '1325950970.698'
+                     , 'Priority'   : '9'
+                     , 'Application': 'GotoIf'
+                     , 'Context'    : 'macro-dial-one'
+                     , 'Privilege'  : 'dialplan,all'
+                     , 'Event'      : 'Newexten'
+                     , 'Channel'    : 'Local/102@from-queue-a8ca;2'
+                    })
+                , Event
+                    ({ 'Value'     : '2'
+                     , 'Variable'  : 'MACRO_DEPTH'
+                     , 'Uniqueid'  : '1325950970.698'
+                     , 'Privilege' : 'dialplan,all'
+                     , 'Event'     : 'VarSet'
+                     , 'Channel'   : 'Local/102@from-queue-a8ca;2'
+                    })
+                , Event
+                    ({'Privilege': 'dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Variable: MACRO_DEPTH\r\n'
+                      'Value: 2\r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: Newexten\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Context: macro-dial-one\r\n'
+                      'Extension: zap2dahdi\r\n'
+                      'Priority: 9\r\n'
+                      'Application: GotoIf\r\n'
+                      'AppData: 0?begin2\r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Variable: MACRO_DEPTH\r\n'
+                      'Value: 2\r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: Newexten\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Context: macro-dial-one\r\n'
+                      'Extension: zap2dahdi\r\n'
+                      'Priority: 10\r\n'
+                      'Application: Set\r\n'
+                      'AppData: THISDIAL=SIP/102\r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Variable: THISDIAL\r\n'
+                      'Value: SIP/102\r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Variable: MACRO_DEPTH\r\n'
+                      'Value: 2\r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: Newexten\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Context: macro-dial-one\r\n'
+                      'Extension: zap2dahdi\r\n'
+                      'Priority: 11\r\n'
+                      'Application: Return\r\n'
+                      'AppData: \r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Variable: GOSUB_RETVAL\r\n'
+                      'Value: \r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Variable: MACRO_DEPTH\r\n'
+                      'Value: 2\r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: Newexten\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Context: macro-dial-one\r\n'
+                      'Extension: dstring\r\n'
+                      'Priority: 9\r\n'
+                      'Application: Set\r\n'
+                      'AppData: DSTRING=SIP/102&\r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Variable: DSTRING\r\n'
+                      'Value: SIP/102&\r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Variable: MACRO_DEPTH\r\n'
+                      'Value: 2\r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: Newexten\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Context: macro-dial-one\r\n'
+                      'Extension: dstring\r\n'
+                      'Priority: 10\r\n'
+                      'Application: Set\r\n'
+                      'AppData: ITER=2\r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: Newexten\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/101@from-queue-4406;2\r\n'
+                      'Context: macro-dial-one\r\n'
+                      'Extension: zap2dahdi\r\n'
+                      'Priority: 6\r\n'
+                      'Application: ExecIf\r\n'
+                      'AppData: 0?Set(THISPART2=DAHDI/101)\r\n'
+                      'Uniqueid: 1325950970.696\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Variable: ITER\r\n'
+                      'Value: 2\r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/102@from-queue-a8ca;2\r\n'
+                      'Variable: MACRO_DEPTH\r\n'
+                      'Value: 2\r\n'
+                      'Uniqueid: 1325950970.698\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/101@from-queue-4406;2\r\n'
+                      'Variable: MACRO_DEPTH\r\n'
+                      'Value: 2\r\n'
+                      'Uniqueid: 1325950970.696\r\n'
+                      '\r\n'
+                      'Event: Newexten\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/101@from-queue-4406;2\r\n'
+                      'Context: macro-dial-one\r\n'
+                      'Extension: zap2dahdi\r\n'
+                      'Priority: 7\r\n'
+                      'Application: Set\r\n'
+                      'AppData: NEWDIAL=SIP/101&\r\n'
+                      'Uniqueid: 1325950970.696\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/101@from-queue-4406;2\r\n'
+                      'Variable: NEWDIAL\r\n'
+                      'Value: SIP/101&\r\n'
+                      'Uniqueid: 1325950970.696\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/101@from-queue-4406;2\r\n'
+                      'Variable: MACRO_DEPTH\r\n'
+                      'Value: 2\r\n'
+                      'Uniqueid: 1325950970.696\r\n'
+                      '\r\n'
+                      'Event: Newexten\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/101@from-queue-4406;2\r\n'
+                      'Context: macro-dial-one\r\n'
+                      'Extension: zap2dahdi\r\n'
+                      'Priority: 8\r\n'
+                      'Application: Set\r\n'
+                      'AppData: ITER2=2\r\n'
+                      'Uniqueid: 1325950970.696\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/101@from-queue-4406;2\r\n'
+                      'Variable: ITER2\r\n'
+                      'Value: 2\r\n'
+                      'Uniqueid: 1325950970.696\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/101@from-queue-4406;2\r\n'
+                      'Variable: MACRO_DEPTH\r\n'
+                      'Value: 2\r\n'
+                      'Uniqueid: 1325950970.696\r\n'
+                      '\r\n'
+                      'Event: Newexten\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/101@from-queue-4406;2\r\n'
+                      'Context: macro-dial-one\r\n'
+                      'Extension: zap2dahdi\r\n'
+                      'Priority: 9\r\n'
+                      'Application: GotoIf\r\n'
+                      'AppData: 0?begin2\r\n'
+                      'Uniqueid: 1325950970.696\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/101@from-queue-4406;2\r\n'
+                      'Variable: MACRO_DEPTH\r\n'
+                      'Value: 2\r\n'
+                      'Uniqueid: 1325950970.696\r\n'
+                      '\r\n'
+                      'Event: Newexten\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/101@from-queue-4406;2\r\n'
+                      'Context: macro-dial-one\r\n'
+                      'Extension: zap2dahdi\r\n'
+                      'Priority: 10\r\n'
+                      'Application: Set\r\n'
+                      'AppData: THISDIAL=SIP/101\r\n'
+                      'Uniqueid: 1325950970.696\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/101@from-queue-4406;2\r\n'
+                      'Variable: THISDIAL\r\n'
+                      'Value: SIP/101\r\n'
+                      'Uniqueid: 1325950970.696\r\n'
+                      '\r\n'
+                      'Event: VarSet\r\n'
+                      'Privilege: dialplan,all\r\n'
+                      'Channel: Local/101@from-queue-4406;2'
+                    , 'Variable': 'MACRO_DEPTH'
+                    , 'Event': 'VarSet'
+                    , 'Value': '2'
+                    , 'Uniqueid': '1325950970.696'
+                   })
+                )
+            )
+        self.run_manager(events)
+        r = self.manager.login('account', 'geheim')
+        self.compare_result(r, events['Login'][0])
+        evnames = []
+        for s in events['Login'][3]['Privilege'].split('\r\n'):
+            if s.startswith('Event:'):
+                evnames.append(s.split(':')[1].strip())
+        for k in xrange(30):
+            n = self.queue.get()
+            e = self.events[n]
+            if n < 2:
+                self.compare_result(e, events['Login'][n+1])
+            elif n == 2:
+                self.assertEqual(e['Event'], 'VarSet')
+            else:
+                self.assertEqual(e['Event'], evnames[n-3])
+        self.assertEqual(len(self.events), 30)
 
 def test_suite():
     suite = unittest.TestSuite()
