@@ -55,21 +55,24 @@ class AGI:
     Asterisk. 
     """
     
-    def __init__(self):
+    def __init__(self,stdin=sys.stdin,stdout=sys.stdout,stderr=sys.stderr):
+        self.stdin=stdin
+        self.stdout=stdout
+        self.stderr=stderr
         self._got_sighup = False
         signal.signal(signal.SIGHUP, self._handle_sighup)  # handle SIGHUP
-        sys.stderr.write('ARGS: ')
-        sys.stderr.write(str(sys.argv))
-        sys.stderr.write('\n')
+        self.stderr.write('ARGS: ')
+        self.stderr.write(str(sys.argv))
+        self.stderr.write('\n')
         self.env = {}
         self._get_agi_env()
 
     def _get_agi_env(self):
         while 1:
-            line = sys.stdin.readline().strip()
-            sys.stderr.write('ENV LINE: ')
-            sys.stderr.write(line)
-            sys.stderr.write('\n')
+            line = self.stdin.readline().strip()
+            self.stderr.write('ENV LINE: ')
+            self.stderr.write(line)
+            self.stderr.write('\n')
             if line == '':
                 #blank line signals end
                 break
@@ -78,9 +81,9 @@ class AGI:
             data = data.strip()
             if key <> '':
                 self.env[key] = data
-        sys.stderr.write('class AGI: self.env = ')
-        sys.stderr.write(pprint.pformat(self.env))
-        sys.stderr.write('\n')
+        self.stderr.write('class AGI: self.env = ')
+        self.stderr.write(pprint.pformat(self.env))
+        self.stderr.write('\n')
 
     def _quote(self, string):
         return ''.join(['"', str(string), '"'])
@@ -114,16 +117,16 @@ class AGI:
         command = command.strip()
         if command[-1] != '\n':
             command += '\n'
-        sys.stderr.write('    COMMAND: %s' % command)
-        sys.stdout.write(command)
-        sys.stdout.flush()
+        self.stderr.write('    COMMAND: %s' % command)
+        self.stdout.write(command)
+        self.stdout.flush()
 
-    def get_result(self, stdin=sys.stdin):
+    def get_result(self):
         """Read the result of a command from Asterisk"""
         code = 0
         result = {'result':('','')}
-        line = stdin.readline().strip()
-        sys.stderr.write('    RESULT_LINE: %s\n' % line)
+        line = self.stdin.readline().strip()
+        self.stderr.write('    RESULT_LINE: %s\n' % line)
         m = re_code.search(line)
         if m:
             code, response = m.groups()
@@ -140,16 +143,16 @@ class AGI:
                 if key == 'result' and value == '-1':
                     raise AGIAppError("Error executing application, or hangup")
 
-            sys.stderr.write('    RESULT_DICT: %s\n' % pprint.pformat(result))
+            self.stderr.write('    RESULT_DICT: %s\n' % pprint.pformat(result))
             return result
         elif code == 510:
             raise AGIInvalidCommand(response)
         elif code == 520:
             usage = [line]
-            line = stdin.readline().strip()
+            line = self.stdin.readline().strip()
             while line[:3] != '520':
                 usage.append(line)
-                line = stdin.readline().strip()
+                line = self.stdin.readline().strip()
             usage.append(line)
             usage = '%s\n' % '\n'.join(usage)
             raise AGIUsageError(usage)
@@ -640,7 +643,7 @@ if __name__=='__main__':
     try:
         agi.appexec('backgrounder','demo-congrats')
     except AGIAppError:
-        sys.stderr.write("Handled exception for missing application backgrounder\n")
+        self.stderr.write("Handled exception for missing application backgrounder\n")
 
     agi.set_variable('foo','bar')
     agi.get_variable('foo')
@@ -648,19 +651,19 @@ if __name__=='__main__':
     try:
         agi.get_variable('foobar')
     except AGIAppError:
-        sys.stderr.write("Handled exception for missing variable foobar\n")
+        self.stderr.write("Handled exception for missing variable foobar\n")
 
     try:
         agi.database_put('foo', 'bar', 'foobar')
         agi.database_put('foo', 'baz', 'foobaz')
         agi.database_put('foo', 'bat', 'foobat')
         v = agi.database_get('foo', 'bar')
-        sys.stderr.write('DBVALUE foo:bar = %s\n' % v)
+        self.stderr.write('DBVALUE foo:bar = %s\n' % v)
         v = agi.database_get('bar', 'foo')
-        sys.stderr.write('DBVALUE foo:bar = %s\n' % v)
+        self.stderr.write('DBVALUE foo:bar = %s\n' % v)
         agi.database_del('foo', 'bar')
         agi.database_deltree('foo')
     except AGIDBError:
-        sys.stderr.write("Handled exception for missing database entry bar:foo\n")
+        self.stderr.write("Handled exception for missing database entry bar:foo\n")
 
     agi.hangup()
