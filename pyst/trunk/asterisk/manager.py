@@ -63,13 +63,31 @@ from time import sleep
 
 EOL = '\r\n'
 
-class ManagerMsg(object): 
+class _Msg(object): 
+    def has_header(self, hname):
+        """Check for a header"""
+        return self.headers.has_key(hname)
+
+    def get_header(self, hname, defval = None):
+        """Return the specified header"""
+        return self.headers.get(hname, defval)
+
+    def __getitem__(self, hname):
+        """Return the specified header"""
+        return self.headers[hname]
+
+    def __repr__(self):
+        return self.headers['Response']
+
+
+class ManagerMsg(_Msg): 
     """A manager interface message"""
     def __init__(self, response):
         # the raw response, straight from the horse's mouth:
         self.response = response
         self.data = ''
         self.headers = {}
+        self.multiheaders = {}
         
         # parse the response
         self.parse(response)
@@ -90,10 +108,13 @@ class ManagerMsg(object):
             # 'Response', e.g., IAXpeers in Asterisk 1.4.X
             if self.has_header('ActionID'):
                 self.headers['Response'] = 'Generated Header'
+                self.multiheaders ['Response'] = ['Generated Header']
             elif '--END COMMAND--' in self.data:
                 self.headers['Event'] = 'NoClue'
+                self.multiheaders ['Event'] = ['NoClue']
             else:
                 self.headers['Response'] = 'Generated Header'
+                self.multiheaders ['Response'] = ['Generated Header']
         
     def parse(self, response):
         """Parse a manager message"""
@@ -106,29 +127,18 @@ class ManagerMsg(object):
                 break
             try:
                 k, v = (x.strip() for x in line.split(':',1))
+                if k not in self.multiheaders:
+                    self.multiheaders[k]=[]
                 self.headers[k] = v
+                self.multiheaders[k].append(v)
             except ValueError:
                 # invalid header, start of multi-line data response
                 data.extend(response[n:])
                 break
         self.data = ''.join(data)
 
-    def has_header(self, hname):
-        """Check for a header"""
-        return self.headers.has_key(hname)
 
-    def get_header(self, hname, defval = None):
-        """Return the specfied header"""
-        return self.headers.get(hname, defval)
-
-    def __getitem__(self, hname):
-        """Return the specfied header"""
-        return self.headers[hname]
-    def __repr__(self):
-        return self.headers['Response']
-
-
-class Event(object):
+class Event(_Msg):
     """Manager interface Events, __init__ expects and 'Event' message"""
     def __init__(self, message):
 
@@ -136,6 +146,7 @@ class Event(object):
         self.message = message
         self.data = message.data
         self.headers = message.headers
+        self.multiheaders = message.multiheaders
 
         # if this is not an event message we have a problem
         if not message.has_header('Event'):
@@ -143,18 +154,6 @@ class Event(object):
 
         # get the event name
         self.name = message.get_header('Event')
-    
-    def has_header(self, hname):
-        """Check for a header"""
-        return self.headers.has_key(hname)
-
-    def get_header(self, hname, defval = None):
-        """Return the specfied header"""
-        return self.headers.get(hname, defval)
-    
-    def __getitem__(self, hname):
-        """Return the specfied header"""
-        return self.headers[hname]
     
     def __repr__(self):
         return self.headers['Event']

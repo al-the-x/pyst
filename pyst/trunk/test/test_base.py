@@ -163,7 +163,9 @@ class Test_Manager(unittest.TestCase):
             elif isinstance(v, str):
                 self.assertEqual(r_event[k], v)
             else:
-                self.assertEqual(r_event[k], v[0])
+                self.assertEqual(r_event[k], v[-1])
+                self.assertEqual(sorted(r_event.multiheaders[k]),
+                    sorted(list(v)))
 
     def test_login(self):
         self.run_manager({})
@@ -606,6 +608,40 @@ lcr/556              s@attendoparse:9     Up Read(dtmf,,30,noanswer,,2)
             else:
                 self.assertEqual(e['Event'], evnames[n-3])
         self.assertEqual(len(self.events), 30)
+
+    def test_agent_event(self):
+        d = dict
+        # Events from SF bug 3470641 
+        # http://sourceforge.net/tracker/
+        # ?func=detail&aid=3470641&group_id=76162&atid=546272
+        # But we fail to reproduce the bug.
+        events = dict \
+            ( Login =
+                ( self.default_events['Login'][0]
+                , Event
+                    ( Event              = ('AgentCalled',)
+                    , Privilege          = ('agent,all',)
+                    , Queue              = ('test',)
+                    , AgentCalled        = ('SIP/s394000',)
+                    , AgentName          = ('910567',)
+                    , ChannelCalling     = ('SIP/multifon-00000006',)
+                    , DestinationChannel = ('SIP/s394000-00000007',)
+                    , CallerIDNum        = ('394000',)
+                    , CallerIDName       = ('Agent',)
+                    , Context            = ('from-multifon',)
+                    , Extension          = ('7930456789',)
+                    , Priority           = ('3',)
+                    , Uniqueid           = ('1302010429.6',)
+                    , Variable           = ('data1=456789', 'data2=test')
+                    )
+                )
+            )
+        self.run_manager(events)
+        r = self.manager.login('account', 'geheim')
+        self.compare_result(r, events['Login'][0])
+        for k in events['Login'][1:]:
+            n = self.queue.get()
+            self.compare_result(self.events[n], events['Login'][n+1])
 
 def test_suite():
     suite = unittest.TestSuite()
