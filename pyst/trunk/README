@@ -48,6 +48,14 @@ Thanks to Karl Putland for writing the original package.
 Thanks to Matthew Nicholson for maintaining the package for some years
 and for handing over maintenance when he was no longer interested.
 
+Thanks also to the people in the sourceforge project and those who just
+report bugs:
+Antoine Brenner,
+Max Nesterov,
+Sven Uebelacker
+
+... and to unnamed contributors to earlier releases.
+
 Things to do for pyst
 ---------------------
 
@@ -149,6 +157,22 @@ prior to that the sources are in the CVS repository on sourceforge.
 
 Changes
 -------
+
+Version 0.4: Minor feature enhancements
+
+Small feature extensions to AGI and Manager modules. Add a regression
+test which now covers some aspects of the manager API.
+
+ - Handle events with several fields with the same name (e.g. 'Variable'
+   in the 'AgentCalled' event. Thanks to Max Nesterov for the
+   suggestion, implementation differs from the suggestion in SF patch
+   3290869. For a use-case see the give SF patch and the regression test
+   case test_agent_event.
+ - Allow to use AGI module in FastAGI way via TCP connection.
+   This change allows you to specify the socket streams instead
+   sys.stdin/sys.stdout streams. Thanks to Max Nesterov for the patch.
+   Applies SF patch 3047290.
+ - Add regression test framework and some test cases for manager API.
 
 Version 0.3: Minor feature enhancements
 
