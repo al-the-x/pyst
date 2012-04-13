@@ -170,6 +170,8 @@ class Manager(object):
         
         # our hostname
         self.hostname = socket.gethostname()
+        # pid -- used for unique naming of ActionID
+        self.pid      = os.getpid ()
 
         # our queues
         self._message_queue = Queue.Queue()
@@ -236,7 +238,9 @@ class Manager(object):
         cdict.update(kwargs)
 
         # set the action id
-        if not cdict.has_key('ActionID'): cdict['ActionID'] = '%s-%08x' % (self.hostname, self.next_seq())
+        if not cdict.has_key('ActionID'):
+            cdict['ActionID'] = '%s-%04s-%08x' % (self.hostname,
+                self.pid, self.next_seq())
         clist = []
 
         # generate the command
