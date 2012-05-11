@@ -173,6 +173,9 @@ test which now covers some aspects of the manager API.
    sys.stdin/sys.stdout streams. Thanks to Max Nesterov for the patch.
    Applies SF patch 3047290.
  - Add regression test framework and some test cases for manager API.
+ - The generated ActionID for the manager interface now includes the
+   process-ID, this allows several concurrent processes using the
+   manager API.
 
 Version 0.3: Minor feature enhancements
 
