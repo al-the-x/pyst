@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 # vim: set expandtab shiftwidth=4:
 
+from __future__ import absolute_import
+from __future__ import print_function
+
 """
 Python Interface for Asterisk Manager
 
@@ -10,12 +13,12 @@ This module provides a Python API for interfacing with the asterisk manager.
    import sys
 
    def handle_shutdown(event, manager):
-      print "Received shutdown event"
+      print ("Received shutdown event")
       manager.close()
       # we could analize the event and reconnect here
       
    def handle_event(event, manager):
-      print "Received event: %s" % event.name
+      print ("Received event: %s" % event.name)
    
    manager = asterisk.manager.Manager()
    try:
@@ -32,14 +35,15 @@ This module provides a Python API for interfacing with the asterisk manager.
            response = manager.status()
 
            manager.logoff()
-       except asterisk.manager.ManagerSocketException, (errno, reason):
-          print "Error connecting to the manager: %s" % reason
+       except asterisk.manager.ManagerSocketException as err:
+          errno, reason = err
+          print ("Error connecting to the manager: %s" % reason)
           sys.exit(1)
-       except asterisk.manager.ManagerAuthException, reason:
-          print "Error logging in to the manager: %s" % reason
+       except asterisk.manager.ManagerAuthException as reason:
+          print ("Error logging in to the manager: %s" % reason)
           sys.exit(1)
-       except asterisk.manager.ManagerException, reason:
-          print "Error: %s" % reason
+       except asterisk.manager.ManagerException as reason:
+          print ("Error: %s" % reason)
           sys.exit(1)
           
    finally:
@@ -55,11 +59,10 @@ and submit patches.
 import sys,os
 import socket
 import threading
-import Queue
 import re
-from cStringIO import StringIO
-from types import *
+from io import StringIO
 from time import sleep
+from asterisk.compat import Queue, string_types
 
 EOL = '\r\n'
 
@@ -174,9 +177,9 @@ class Manager(object):
         self.pid      = os.getpid ()
 
         # our queues
-        self._message_queue = Queue.Queue()
-        self._response_queue = Queue.Queue()
-        self._event_queue = Queue.Queue()
+        self._message_queue = Queue()
+        self._response_queue = Queue()
+        self._event_queue = Queue()
 
         # callbacks for events
         self._event_callbacks = {}
@@ -259,7 +262,8 @@ class Manager(object):
         try:
             self._sock.write(command)
             self._sock.flush()
-        except socket.error, (errno, reason):
+        except socket.error as err:
+            errno, reason = err
             raise ManagerSocketException(errno, reason)
         
         self._reswaiting.insert(0,1)
@@ -394,7 +398,7 @@ class Manager(object):
                 elif message.has_header('Response'):
                     self._response_queue.put(message)
                 else:
-                    print 'No clue what we got\n%s' % message.data
+                    print ('No clue what we got\n%s' % message.data)
         finally:
             # wait for our data receiving thread to exit
             t.join()
@@ -430,7 +434,7 @@ class Manager(object):
             raise ManagerException('Already connected to manager')
 
         # make sure host is a string
-        assert type(host) in StringTypes
+        assert isinstance (host, string_types)
 
         port = int(port)  # make sure port is an int
 
@@ -440,7 +444,8 @@ class Manager(object):
             _sock.connect((host,port))
             self._sock = _sock.makefile ()
             _sock.close ()
-        except socket.error, (errno, reason):
+        except socket.error as err:
+            errno, reason = err
             raise ManagerSocketException(errno, reason)
 
         # we are connected and running
