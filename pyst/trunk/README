@@ -12,6 +12,11 @@ Asterisk from python. The library currently supports AGI, AMI, and the parsing
 of Asterisk configuration files. The library also includes debugging facilities
 for AGI.
 
+A note on maintenance and forks:
+The current maintainer is Ralf Schlatterbeck. I've contacted maintainers
+of forks to try to join forces. For any questions, please contact me via
+rsc@runtux.com or my sourceforge user.
+
 Download from `Sourceforge project page`_.
 
 .. _`Sourceforge project page`: http://sourceforge.net/projects/pyst/
@@ -132,11 +137,12 @@ Source Code Repository Access
 The current versions are kept in a Subversion repository on Sourceforge.
 You can check out the trunk with::
 
-    svn co https://pyst.svn.sourceforge.net/svnroot/pyst/pyst/trunk pyst
+    svn co svn://svn.code.sf.net/p/pyst/svn/pyst/trunk pyst
+    
 
 There is also a 0.2 branch in::
 
-    https://pyst.svn.sourceforge.net/svnroot/pyst/pyst/branches/0.2
+    svn://svn.code.sf.net/p/pyst/svn/pyst/branches/0.2
 
 which contains unreleased changes after 0.2 (which have been merged into
 trunk *after* changing how manager commands to asterisk are parsed).
@@ -164,6 +170,7 @@ Fix setup.py to include download_url. This makes it installable using
 intall tools like pip.
 
  - Add download_url to setup.py
+ - Fix svn url after SourceForge upgrade
 
 Version 0.4: Minor feature enhancements
 
