@@ -19,7 +19,7 @@ for line in f :
 licenses = ( 'Python Software Foundation License'
            , 'GNU Library or Lesser General Public License (LGPL)'
            )
-
+download = "http://downloads.sourceforge.net/project/pyst/pyst"
 
 setup \
     ( name = 'pyst'
@@ -34,6 +34,8 @@ setup \
     , packages = ['asterisk']
     , license = ', '.join (licenses)
     , platforms = 'Any'
+    , download_url = \
+        "%(download)s/%(VERSION)s/pyst-%(VERSION)s.tar.gz" % locals ()
     , classifiers =
         [ 'Development Status :: 5 - Production/Stable'
         , 'Environment :: Other Environment'
