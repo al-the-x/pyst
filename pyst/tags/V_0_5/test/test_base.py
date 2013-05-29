@@ -5,7 +5,7 @@ from   signal import SIGTERM
 from   asterisk.manager import Manager
 from   os import fork, kill, waitpid
 from   time import sleep
-from   asterisk.compat import Queue
+from   Queue import Queue
 
 class Event(dict):
     """ Events are encoded as dicts with a header fieldname to
@@ -90,7 +90,7 @@ class Test_Manager(unittest.TestCase):
         """
         while True:
             conn, addr = sock.accept()
-            f = conn.makefile('rw')
+            f = conn.makefile('r')
             conn.close()
             f.write('Asterisk Call Manager/1.1\r\n')
             f.flush()
