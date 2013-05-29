@@ -1,4 +1,7 @@
 #! /usr/bin/env python
+from __future__ import absolute_import
+from __future__ import print_function
+from __future__ import division
 ##############################################################################
 #
 # Copyright (c) 2001, 2002 Zope Corporation and Contributors.
@@ -203,9 +206,9 @@ class ImmediateTestResult(unittest._TextTestResult):
     def stopTest(self, test):
         self._testtimes[test] = time.time() - self._testtimes[test]
         if gc.garbage:
-            print "The following test left garbage:"
-            print test
-            print gc.garbage
+            print ("The following test left garbage:")
+            print (test)
+            print (gc.garbage)
             # eat the garbage here, so that the garbage isn't
             # printed for every subsequent test.
             gc.garbage[:] = []
@@ -216,9 +219,9 @@ class ImmediateTestResult(unittest._TextTestResult):
                              and
                              t not in self._threads)]
         if new_threads:
-            print "The following test left new threads behind:"
-            print test
-            print "New thread(s):", new_threads
+            print ("The following test left new threads behind:")
+            print (test)
+            print ("New thread(s):", new_threads)
 
     def print_times(self, stream, count=None):
         results = self._testtimes.items()
@@ -284,7 +287,7 @@ class ImmediateTestResult(unittest._TextTestResult):
         if self._progress:
             self.stream.write("\r")
         if self._debug:
-            raise err[0], err[1], err[2]
+            raise err[0] (err[1], err[2])
         self._print_traceback("Error in test %s" % test, err,
                               test, self.errors)
 
@@ -292,7 +295,7 @@ class ImmediateTestResult(unittest._TextTestResult):
         if self._progress:
             self.stream.write("\r")
         if self._debug:
-            raise err[0], err[1], err[2]
+            raise err[0] (err[1], err[2])
         self._print_traceback("Failure in test %s" % test, err,
                               test, self.failures)
 
@@ -365,11 +368,11 @@ class PathInit:
         kind = functional and "functional" or "unit"
         if libdir:
             extra = os.path.join(org_cwd, libdir)
-            print "Running %s tests from %s" % (kind, extra)
+            print ("Running %s tests from %s" % (kind, extra))
             self.libdir = extra
             sys.path.insert(0, extra)
         else:
-            print "Running %s tests from %s" % (kind, self.cwd)
+            print ("Running %s tests from %s" % (kind, self.cwd))
         # Make sure functional tests find ftesting.zcml
         if functional:
             config_file = 'ftesting.zcml'
@@ -377,7 +380,7 @@ class PathInit:
                 # We chdired into build, so ftesting.zcml is in the
                 # parent directory
                 config_file = os.path.join('..', 'ftesting.zcml')
-            print "Parsing %s" % config_file
+            print ("Parsing %s" % config_file)
             from zope.testing.functional import FunctionalTestSetup
             FunctionalTestSetup(config_file)
 
@@ -408,7 +411,7 @@ class TestFileFinder:
         if not "__init__.py" in files:
             if not files or files == ["CVS"]:
                 return
-            print "not a package", dir
+            print ("not a package", dir)
             return
 
         # Put matching files in matches.  If matches is non-empty,
@@ -427,9 +430,9 @@ class TestFileFinder:
             __import__(pkg)
         # We specifically do not want to catch ImportError since that's useful
         # information to know when running the tests.
-        except RuntimeError, e:
+        except RuntimeError as e:
             if VERBOSE:
-                print "skipping %s because: %s" % (pkg, e)
+                print ("skipping %s because: %s" % (pkg, e))
             return
         else:
             self.files.extend(matches)
@@ -442,7 +445,7 @@ class TestFileFinder:
         return mod
 
 def walk_with_symlinks(top, func, arg):
-    """Like os.path.walk, but follows symlinks on POSIX systems.
+    """Like os.walk, but follows symlinks on POSIX systems.
 
     This could theoreticaly result in an infinite loop, if you create symlink
     cycles in your Zope sandbox, so don't do that.
@@ -496,9 +499,9 @@ def get_suite(file):
     modname = finder.module_from_path(file)
     try:
         mod = package_import(modname)
-    except ImportError, err:
+    except ImportError as err:
         # print traceback
-        print "Error importing %s\n%s" % (modname, err)
+        print ("Error importing %s\n%s" % (modname, err))
         traceback.print_exc()
         if debug:
             raise
@@ -506,7 +509,7 @@ def get_suite(file):
     try:
         suite_func = mod.test_suite
     except AttributeError:
-        print "No test_suite() in %s" % file
+        print ("No test_suite() in %s" % file)
         return None
     return suite_func()
 
@@ -573,7 +576,7 @@ class TrackRefs:
         ct.reverse()
         for delta1, delta2, t in ct:
             if delta1 or delta2:
-                print "%-55s %8d %8d" % (t, delta1, delta2)
+                print ("%-55s %8d %8d" % (t, delta1, delta2))
 
         self.type2count = type2count
         self.type2all = type2all
@@ -594,13 +597,13 @@ def runner(files, test_filter, debug):
         if timesfn:
             r.print_times(open(timesfn, "w"))
             if VERBOSE:
-                print "Wrote timing data to", timesfn
+                print ("Wrote timing data to", timesfn)
         if timetests:
             r.print_times(sys.stdout, timetests)
     except:
         if debugger:
-            print "%s:" % (sys.exc_info()[0], )
-            print sys.exc_info()[1]
+            print ("%s:" % (sys.exc_info()[0], ))
+            print (sys.exc_info()[1])
             pdb.post_mortem(sys.exc_info()[2])
         else:
             raise
@@ -612,12 +615,12 @@ def remove_stale_bytecode(arg, dirname, names):
             srcname = name[:-1]
             if srcname not in names:
                 fullname = os.path.join(dirname, name)
-                print "Removing stale bytecode file", fullname
+                print ("Removing stale bytecode file", fullname)
                 os.unlink(fullname)
 
 def main(module_filter, test_filter, libdir):
     if not keepStaleBytecode:
-        os.path.walk(os.curdir, remove_stale_bytecode, None)
+        os.walk(os.curdir, remove_stale_bytecode, None)
 
     # Get the log.ini file from the current directory instead of possibly
     # buried in the build directory.  XXX This isn't perfect because if
@@ -657,12 +660,12 @@ def main(module_filter, test_filter, libdir):
             runner(files, test_filter, debug)
             gc.collect()
             if gc.garbage:
-                print "GARBAGE:", len(gc.garbage), gc.garbage
+                print ("GARBAGE:", len(gc.garbage), gc.garbage)
                 return
             if REFCOUNT:
                 prev = rc
                 rc = sys.gettotalrefcount()
-                print "totalrefcount=%-8d change=%-6d" % (rc, rc - prev)
+                print ("totalrefcount=%-8d change=%-6d" % (rc, rc - prev))
                 track.update()
     else:
         runner(files, test_filter, debug)
@@ -720,9 +723,9 @@ def process_args(argv=None):
         opts, args = getopt.getopt(argv[1:], "a:bBcdDfg:G:hLmprtTuv",
                                    ["all", "help", "libdir=", "times=",
                                     "keepbytecode", "dir=", "build"])
-    except getopt.error, msg:
-        print msg
-        print "Try `python %s -h' for more information." % argv[0]
+    except getopt.error as msg:
+        print (msg)
+        print ("Try `python %s -h' for more information." % argv[0])
         sys.exit(2)
 
     for k, v in opts:
@@ -748,13 +751,13 @@ def process_args(argv=None):
         elif k == "-f":
             functional = 1
         elif k in ("-h", "--help"):
-            print __doc__
+            print (__doc__)
             sys.exit(0)
         elif k == "-g":
             gcthresh = int(v)
         elif k == "-G":
             if not v.startswith("DEBUG_"):
-                print "-G argument must be DEBUG_ flag, not", repr(v)
+                print ("-G argument must be DEBUG_ flag, not", repr(v))
                 sys.exit(1)
             gcflags.append(v)
         elif k == '--keepbytecode':
@@ -771,7 +774,7 @@ def process_args(argv=None):
             if hasattr(sys, "gettotalrefcount"):
                 REFCOUNT = 1
             else:
-                print "-r ignored, because it needs a debug build of Python"
+                print ("-r ignored, because it needs a debug build of Python")
         elif k == "-T":
             TRACE = 1
         elif k == "-t":
@@ -793,18 +796,18 @@ def process_args(argv=None):
     if gcthresh is not None:
         if gcthresh == 0:
             gc.disable()
-            print "gc disabled"
+            print ("gc disabled")
         else:
             gc.set_threshold(gcthresh)
-            print "gc threshold:", gc.get_threshold()
+            print ("gc threshold:", gc.get_threshold())
 
     if gcflags:
         val = 0
         for flag in gcflags:
             v = getattr(gc, flag, None)
             if v is None:
-                print "Unknown gc flag", repr(flag)
-                print gc.set_debug.__doc__
+                print ("Unknown gc flag", repr(flag))
+                print (gc.set_debug.__doc__)
                 sys.exit(1)
             val |= v
         gcdebug |= v
@@ -822,18 +825,18 @@ def process_args(argv=None):
         if build_inplace:
             cmd += "_ext -i"
         if VERBOSE:
-            print cmd
+            print (cmd)
         sts = os.system(cmd)
         if sts:
-            print "Build failed", hex(sts)
+            print ("Build failed", hex(sts))
             sys.exit(1)
 
     if VERBOSE:
         kind = functional and "functional" or "unit"
         if level == 0:
-            print "Running %s tests at all levels" % kind
+            print ("Running %s tests at all levels" % kind)
         else:
-            print "Running %s tests at level %d" % (kind, level)
+            print ("Running %s tests at level %d" % (kind, level))
 
     # XXX We want to change *visible* warnings into errors.  The next
     # line changes all warnings into errors, including warnings we
@@ -870,15 +873,15 @@ def process_args(argv=None):
             f = open(path, "wb")
             cPickle.dump(r, f)
             f.close()
-            print path
+            print (path)
             r.write_results(show_missing=1, summary=1, coverdir=coverdir)
         else:
             bad = main(module_filter, test_filter, libdir)
             if bad:
                 sys.exit(1)
-    except ImportError, err:
-        print err
-        print sys.path
+    except ImportError as err:
+        print (err)
+        print (sys.path)
         raise
 
 
