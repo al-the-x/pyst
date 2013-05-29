@@ -158,6 +158,13 @@ prior to that the sources are in the CVS repository on sourceforge.
 Changes
 -------
 
+Version 0.5: Small install change
+
+Fix setup.py to include download_url. This makes it installable using
+intall tools like pip.
+
+ - Add download_url to setup.py
+
 Version 0.4: Minor feature enhancements
 
 Small feature extensions to AGI and Manager modules. Add a regression
