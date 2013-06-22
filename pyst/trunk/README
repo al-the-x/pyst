@@ -164,6 +164,15 @@ prior to that the sources are in the CVS repository on sourceforge.
 Changes
 -------
 
+Version 0.6: Minor feature enhancements
+
+The asterisk management interface emulator asterisk/astemu now can be
+used for unit-tests of applications using asterisk.manager. We're using
+this in the regression test (see test directory). But this way it is
+usable by others.
+
+ - Factor asterisk emulator from regression test into own module
+
 Version 0.5: Small install change
 
 Fix setup.py to include download_url. This makes it installable using
