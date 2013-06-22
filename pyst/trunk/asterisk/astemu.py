@@ -57,6 +57,14 @@ class Event(dict):
         ret.append ('')
         return '\r\n'.join (ret)
 
+    @property
+    def name(self):
+        return self.get('Event','')
+
+    @property
+    def headers(self):
+        return self
+
 class AsteriskEmu(object):
     """ Emulator for asterisk management interface.
         Used for unittests of asterisk.manager.
